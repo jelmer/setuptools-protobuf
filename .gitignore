@@ -1,1 +1,4 @@
 .mypy_cache
+build/
+__pycache__
+setuptools_protobuf.egg-info/
