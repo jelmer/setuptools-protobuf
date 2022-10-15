@@ -32,5 +32,5 @@ jobs:
       - name: Typing checks
         run: |
           pip install -U mypy types-setuptools
-          python -m mypy dulwich
+          python -m mypy setuptools_protobuf
         if: "matrix.python-version != 'pypy3'"
