@@ -39,7 +39,10 @@ class build_protobuf(Command):
                         break
             else:
                 continue
-            command = [self.protoc, '--python_out=.', protobuf.path]
+            command = [self.protoc, '--python_out=.']
+            if protobuf.mypy:
+                command.append('--mypy_out=.')
+            command.append(protobuf.path)
             sys.stderr.write(
                 'creating %r from %s\n' % (protobuf.outputs(), protobuf.path))
             # TODO(jelmer): Support e.g. building mypy ?
@@ -64,8 +67,9 @@ class clean_protobuf(Command):
 
 class Protobuf:
 
-    def __init__(self, path):
+    def __init__(self, path, mypy=False):
         self.path = path
+        self.mypy = mypy
 
     def outputs(self):
         return [self.path[:-len('.proto')] + '_pb2.py']
