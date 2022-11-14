@@ -7,7 +7,7 @@ from setuptools import Command
 import setuptools.command.build
 
 
-__version__ = (0, 1, 2)
+__version__ = (0, 1, 3)
 
 
 def has_protobuf(command):
