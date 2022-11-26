@@ -22,9 +22,10 @@ class build_protobuf(Command):
         self.protoc = os.environ.get('PROTOC') or find_executable('protoc')
 
     def finalize_options(self):
-        if not os.path.exists(self.protoc):
+        if self.protoc is None or not os.path.exists(self.protoc):
             raise RuntimeError(
-                "Unable to find protobuf compiler %s" % self.protoc)
+                "Unable to find protobuf compiler %s"
+                % (self.protoc or 'protoc'))
 
     def run(self):
         for protobuf in getattr(self.distribution, 'protobufs', []):
