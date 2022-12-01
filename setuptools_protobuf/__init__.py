@@ -68,8 +68,10 @@ class clean_protobuf(Command):
 
 class Protobuf:
 
-    def __init__(self, path, mypy=False):
+    def __init__(self, path, mypy=None):
         self.path = path
+        if mypy is None:
+            mypy = find_executable('protoc-gen-mypy') is not None
         self.mypy = mypy
 
     def outputs(self):
