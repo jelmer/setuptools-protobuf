@@ -4,6 +4,7 @@ import subprocess
 
 from distutils.spawn import find_executable
 from setuptools import Command
+from setuptools.errors import ExecError, PlatformError
 import setuptools.command.build
 
 
@@ -23,7 +24,7 @@ class build_protobuf(Command):
 
     def finalize_options(self):
         if self.protoc is None or not os.path.exists(self.protoc):
-            raise RuntimeError(
+            raise PlatformError(
                 "Unable to find protobuf compiler %s"
                 % (self.protoc or 'protoc'))
 
@@ -47,7 +48,10 @@ class build_protobuf(Command):
             sys.stderr.write(
                 'creating %r from %s\n' % (protobuf.outputs(), protobuf.path))
             # TODO(jelmer): Support e.g. building mypy ?
-            subprocess.check_call(command)
+            try:
+                subprocess.check_call(command, )
+            except subprocess.CalledProcessError as e:
+                raise ExecError(f'error running protoc: {e.returncode}')
 
 
 setuptools.command.build.build.sub_commands.insert(
