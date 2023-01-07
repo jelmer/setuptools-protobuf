@@ -4,7 +4,7 @@ import subprocess
 
 from distutils.spawn import find_executable
 from setuptools import Command
-from setuptools.errors import ExecError, PlatformError
+from setuptools.errors import ExecError, PlatformError  # type: ignore
 import setuptools.command.build
 
 
