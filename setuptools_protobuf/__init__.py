@@ -1,12 +1,11 @@
 import os
-import sys
 import subprocess
-
+import sys
 from distutils.spawn import find_executable
+
+import setuptools.command.build
 from setuptools import Command
 from setuptools.errors import ExecError, PlatformError  # type: ignore
-import setuptools.command.build
-
 
 __version__ = (0, 1, 5)
 
