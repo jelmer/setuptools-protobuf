@@ -7,7 +7,7 @@ import setuptools.command.build
 from setuptools import Command
 from setuptools.errors import ExecError, PlatformError  # type: ignore
 
-__version__ = (0, 1, 5)
+__version__ = (0, 1, 6)
 
 
 def has_protobuf(command):
