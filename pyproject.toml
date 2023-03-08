@@ -1,3 +1,54 @@
 [build-system]
 requires = ["setuptools>=60.8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "setuptools-protobuf"
+authors = [{name = "Jelmer Vernooĳ", email = "jelmer@jelmer.uk"}]
+license = {text = "Apachev2"}
+description = "Setuptools protobuf extension plugin"
+keywords = ["distutils", "setuptools", "protobuf"]
+classifiers = [
+    "Topic :: Software Development :: Version Control",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+]
+requires-python = ">=3.7"
+dependencies = ["setuptools>=60.8"]
+dynamic = ["version"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/jelmer/setuptools-protobuf"
+
+[project.entry-points."distutils.commands"]
+build_protobuf = "setuptools_protobuf:build_protobuf"
+clean_protobuf = "setuptools_protobuf:clean_protobuf"
+
+[project.entry-points."distutils.setup_keywords"]
+protobufs = "setuptools_protobuf:protobufs"
+
+[project.optional-dependencies]
+mypy = ["mypy-protobuf"]
+
+[tool.setuptools]
+packages = ["setuptools_protobuf"]
+zip-safe = true
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = {attr = "setuptools_protobuf.__version__"}
+
+[tool.mypy]
+ignore_missing_imports = true
