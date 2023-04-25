@@ -3,9 +3,10 @@ import subprocess
 import sys
 from distutils.spawn import find_executable
 
-import setuptools.command.build
 from setuptools import Command
 from setuptools.errors import ExecError, PlatformError  # type: ignore
+import distutils.command.build
+import distutils.command.clean
 
 __version__ = (0, 1, 6)
 
@@ -20,6 +21,7 @@ class build_protobuf(Command):
 
     def initialize_options(self):
         self.protoc = os.environ.get('PROTOC') or find_executable('protoc')
+        self.outfiles = []
 
     def finalize_options(self):
         if self.protoc is None or not os.path.exists(self.protoc):
@@ -51,10 +53,13 @@ class build_protobuf(Command):
                 subprocess.check_call(command, )
             except subprocess.CalledProcessError as e:
                 raise ExecError(f'error running protoc: {e.returncode}')
+            self.outfiles.extend(protobuf.outputs())
 
+    def get_inputs(self):
+        return [protobuf.path for protobuf in self.distribution.protobufs]
 
-setuptools.command.build.build.sub_commands.insert(
-    0, ('build_protobuf', has_protobuf))
+    def get_outputs(self):
+        return self.outfiles
 
 
 class clean_protobuf(Command):
@@ -87,3 +92,9 @@ def protobufs(dist, keyword, value):
             raise TypeError(protobuf)
 
     dist.protobufs = value
+
+
+distutils.command.build.build.sub_commands.insert(
+    0, ('build_protobuf', has_protobuf))
+distutils.command.clean.clean.sub_commands.insert(
+    0, ('clean_protobuf', has_protobuf))
