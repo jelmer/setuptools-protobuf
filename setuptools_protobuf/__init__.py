@@ -4,6 +4,7 @@ import sys
 from distutils.spawn import find_executable
 
 from setuptools import Command
+from setuptools.dist import Distribution
 from setuptools.errors import ExecError, PlatformError  # type: ignore
 import distutils.command.build
 import distutils.command.clean
@@ -72,6 +73,21 @@ class clean_protobuf(Command):
                     os.unlink(output)
                 except FileNotFoundError:
                     pass
+
+
+def pyprojecttoml_config(dist: Distribution) -> None:
+    if sys.version_info[:2] >= (3, 11):
+        from tomllib import load as toml_load
+    else:
+        from tomli import load as toml_load
+    try:
+        with open("pyproject.toml", "rb") as f:
+            cfg = toml_load(f).get("tool", {}).get("setuptools-protobuf")
+    except FileNotFoundError:
+        return None
+
+    if cfg:
+        dist.protobufs = [Protobuf(pb) for pb in cfg.get("protobufs")]
 
 
 class Protobuf:

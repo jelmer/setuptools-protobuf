@@ -42,4 +42,7 @@ setup_requires =
 ```toml
 [build-system]
 requires = ["setuptools", "setuptools-protobuf"]
+
+[tool.setuptools-protobuf]
+protobufs = example/foo.proto
 ```
