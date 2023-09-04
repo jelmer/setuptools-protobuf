@@ -57,7 +57,9 @@ class build_protobuf(Command):
             self.outfiles.extend(protobuf.outputs())
 
     def get_inputs(self):
-        return [protobuf.path for protobuf in self.distribution.protobufs]
+        return [
+            protobuf.path
+            for protobuf in self.distribution.protobufs]  # type: ignore
 
     def get_outputs(self):
         return self.outfiles
@@ -87,7 +89,8 @@ def pyprojecttoml_config(dist: Distribution) -> None:
         return None
 
     if cfg:
-        dist.protobufs = [Protobuf(pb) for pb in cfg.get("protobufs")]
+        dist.protobufs = [  # type: ignore
+            Protobuf(pb) for pb in cfg.get("protobufs")]
 
 
 class Protobuf:
