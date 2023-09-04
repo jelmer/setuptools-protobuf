@@ -44,5 +44,5 @@ setup_requires =
 requires = ["setuptools", "setuptools-protobuf"]
 
 [tool.setuptools-protobuf]
-protobufs = example/foo.proto
+protobufs = ["example/foo.proto"]
 ```
