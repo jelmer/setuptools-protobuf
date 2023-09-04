@@ -76,6 +76,9 @@ class clean_protobuf(Command):
                 except FileNotFoundError:
                     pass
 
+    def finalize_options(self):
+        pass
+
 
 def pyprojecttoml_config(dist: Distribution) -> None:
     if sys.version_info[:2] >= (3, 11):
