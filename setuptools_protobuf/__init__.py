@@ -76,6 +76,9 @@ class clean_protobuf(Command):
                 except FileNotFoundError:
                     pass
 
+    def initialize_options(self):
+        pass
+
     def finalize_options(self):
         pass
 
