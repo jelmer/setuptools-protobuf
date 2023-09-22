@@ -81,8 +81,9 @@ class clean_protobuf(Command):
 
 
 def load_pyproject_config(dist: Distribution, cfg) -> None:
+    mypy = cfg.get("mypy")
     dist.protobufs = [  # type: ignore
-        Protobuf(pb) for pb in cfg.get("protobufs")]
+        Protobuf(pb, mypy=mypy) for pb in cfg.get("protobufs")]
 
 
 def pyprojecttoml_config(dist: Distribution) -> None:
