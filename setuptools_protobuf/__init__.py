@@ -6,8 +6,6 @@ from distutils.spawn import find_executable
 from setuptools import Command
 from setuptools.dist import Distribution
 from setuptools.errors import ExecError, PlatformError  # type: ignore
-import distutils.command.build
-import distutils.command.clean
 
 __version__ = (0, 1, 9)
 
@@ -83,7 +81,17 @@ class clean_protobuf(Command):
         pass
 
 
+def load_pyproject_config(dist: Distribution, cfg) -> None:
+    dist.protobufs = [  # type: ignore
+        Protobuf(pb) for pb in cfg.get("protobufs")]
+
+
 def pyprojecttoml_config(dist: Distribution) -> None:
+    build = dist.get_command_class("build")
+    build.sub_commands.insert(0, ("build_protobuf", has_protobuf))
+    clean = dist.get_command_class("clean")
+    clean.sub_commands.insert(0, ("clean_protobuf", has_protobuf))
+
     if sys.version_info[:2] >= (3, 11):
         from tomllib import load as toml_load
     else:
@@ -92,11 +100,10 @@ def pyprojecttoml_config(dist: Distribution) -> None:
         with open("pyproject.toml", "rb") as f:
             cfg = toml_load(f).get("tool", {}).get("setuptools-protobuf")
     except FileNotFoundError:
-        return None
-
-    if cfg:
-        dist.protobufs = [  # type: ignore
-            Protobuf(pb) for pb in cfg.get("protobufs")]
+        pass
+    else:
+        if cfg:
+            load_pyproject_config(dist, cfg)
 
 
 class Protobuf:
@@ -117,9 +124,3 @@ def protobufs(dist, keyword, value):
             raise TypeError(protobuf)
 
     dist.protobufs = value
-
-
-distutils.command.build.build.sub_commands.insert(
-    0, ('build_protobuf', has_protobuf))
-distutils.command.clean.clean.sub_commands.insert(
-    0, ('clean_protobuf', has_protobuf))
