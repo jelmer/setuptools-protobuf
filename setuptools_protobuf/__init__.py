@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-from distutils.spawn import find_executable
 
 from setuptools import Command
 from setuptools.dist import Distribution
@@ -124,3 +123,24 @@ def protobufs(dist, keyword, value):
             raise TypeError(protobuf)
 
     dist.protobufs = value
+
+
+def find_executable(executable):
+    _, ext = os.path.splitext(executable)
+    if sys.platform == 'win32' and ext != '.exe':
+        executable = executable + '.exe'
+
+    if os.path.isfile(executable):
+        return executable
+
+    path = os.environ.get('PATH', os.defpath)
+    # PATH='' doesn't match, whereas PATH=':' looks in the current directory
+    if not path:
+        return None
+
+    paths = path.split(os.pathsep)
+    for p in paths:
+        f = os.path.join(p, executable)
+        if os.path.isfile(f):
+            return f
+    return None
