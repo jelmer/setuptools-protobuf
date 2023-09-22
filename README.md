@@ -44,5 +44,6 @@ setup_requires =
 requires = ["setuptools", "setuptools-protobuf"]
 
 [tool.setuptools-protobuf]
+mypy = true
 protobufs = ["example/foo.proto"]
 ```
