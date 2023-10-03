@@ -46,6 +46,4 @@ requires = ["setuptools", "setuptools-protobuf"]
 [tool.setuptools-protobuf]
 mypy = true
 protobufs = ["example/foo.proto"]
-# srcdir is used as the cwd for the protoc commands. Defaults to the project root if not specified.
-srcdir = "src"
 ```
