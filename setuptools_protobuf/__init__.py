@@ -21,7 +21,9 @@ class build_protobuf(Command):
     description = 'build .proto files'
 
     def initialize_options(self):
-        self.protoc = get_protoc(getattr(self.distribution, 'protoc_version')) or os.environ.get('PROTOC') or find_executable('protoc')
+        self.protoc = (get_protoc(getattr(self.distribution, 'protoc_version'))
+                       or os.environ.get('PROTOC')
+                       or find_executable('protoc'))
         self.outfiles = []
 
     def finalize_options(self):
@@ -150,6 +152,7 @@ def find_executable(executable):
             return f
     return None
 
+
 def get_protoc(version: str | None):
     # handle if no version requested (use system/env)
     if version is None:
@@ -193,7 +196,8 @@ def get_protoc(version: str | None):
     # otherwise download
     zip_name = f'{release}.zip'
     zip_dest = os.path.join(os.path.dirname(__file__), zip_name)
-    release_url = f'https://github.com/protocolbuffers/protobuf/releases/download/v{version}/{zip_name}'
+    base_url = 'https://github.com/protocolbuffers/protobuf/releases/download'
+    release_url = f'{base_url}/v{version}/{zip_name}'
     urllib.request.urlretrieve(url=release_url, filename=zip_dest)
     zipfile.ZipFile(zip_dest).extractall(path)
 
