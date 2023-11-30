@@ -153,7 +153,7 @@ def find_executable(executable):
     return None
 
 
-def get_protoc(version: str | None):
+def get_protoc(version):
     # handle if no version requested (use system/env)
     if version is None:
         return None
