@@ -7,7 +7,11 @@ Plugin for `setuptools` that adds support for compiling protobuf files.
 The plugin requires the external ``protoc`` executable that is part of the
 [protobuf project](https://github.com/protocolbuffers/protobuf) to be present.
 On Debian systems, this executable is shipped in the ``protobuf-compiler`` package.
-Optionally, the ``protoc_version`` option may be used to download the executable as part of the build.
+
+If the ``protoc_version`` option is specified, the specified version of protoc
+will be downloaded from github. When it is not specified, a ``protoc`` binary is
+expected to be present in the environment. You can override the binary with the
+PROTOC environment variable.
 
 Optionally, it can also generate typing hints if the ``mypy`` extra is selected.
 
@@ -47,15 +51,7 @@ requires = ["setuptools", "setuptools-protobuf"]
 [tool.setuptools-protobuf]
 mypy = true
 protobufs = ["example/foo.proto"]
+
+# Optionally, set the specific protoc version to use:
 protoc_version = '25.1'
 ```
-
-## Selecting a ``protoc``
-
-The protobuf compiler ``protoc`` can only produce output compatible with specific versions of the protobuf python library, as detailed in the [version support document](https://protobuf.dev/support/version-support/#python). The protobuf compiler is chosen, in order of descending priority:
-
-* As specified by ``protoc_version``, downloaded as part of the build.
-
-* As specified by ``PROTOC`` environment variable.
-
-* System default.

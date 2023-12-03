@@ -21,9 +21,10 @@ class build_protobuf(Command):
     description = 'build .proto files'
 
     def initialize_options(self):
-        self.protoc = (get_protoc(getattr(self.distribution, 'protoc_version'))
-                       or os.environ.get('PROTOC')
-                       or find_executable('protoc'))
+        self.protoc = (
+            os.environ.get('PROTOC')
+            or get_protoc(getattr(self.distribution, 'protoc_version'))
+            or find_executable('protoc'))
         self.outfiles = []
 
     def finalize_options(self):
