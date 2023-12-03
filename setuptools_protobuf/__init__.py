@@ -1,6 +1,9 @@
 import os
+import platform
 import subprocess
 import sys
+import urllib.request
+import zipfile
 
 from setuptools import Command
 from setuptools.dist import Distribution
@@ -18,7 +21,9 @@ class build_protobuf(Command):
     description = 'build .proto files'
 
     def initialize_options(self):
-        self.protoc = os.environ.get('PROTOC') or find_executable('protoc')
+        self.protoc = (get_protoc(getattr(self.distribution, 'protoc_version'))
+                       or os.environ.get('PROTOC')
+                       or find_executable('protoc'))
         self.outfiles = []
 
     def finalize_options(self):
@@ -82,6 +87,7 @@ class clean_protobuf(Command):
 
 def load_pyproject_config(dist: Distribution, cfg) -> None:
     mypy = cfg.get("mypy")
+    dist.protoc_version = cfg.get("protoc_version")  # type: ignore
     dist.protobufs = [  # type: ignore
         Protobuf(pb, mypy=mypy) for pb in cfg.get("protobufs")]
 
@@ -145,3 +151,59 @@ def find_executable(executable):
         if os.path.isfile(f):
             return f
     return None
+
+
+def get_protoc(version):
+    # handle if no version requested (use system/env)
+    if version is None:
+        return None
+
+    # determine the release string including system and machine info of protoc
+    machine = platform.machine()
+    if machine in ['amd64', 'x64', 'x86_64']:
+        machine = 'x86_64'
+    elif machine in ['aarch64', 'arm64', 'aarch_64']:
+        machine = 'aarch_64'
+    elif machine in ['i386', 'i686', 'x86', 'x86_32']:
+        machine = 'x86_32'
+    elif machine in ['ppc64le', 'ppcle64', 'ppcle_64']:
+        machine = 'ppcle_64'
+    elif machine in ['s390', 's390x', 's390_64']:
+        machine = 's390_64'
+
+    system = platform.system()
+    if system == 'Linux':
+        release = f'protoc-{version}-linux-{machine}'
+    elif system == 'Darwin':
+        assert machine in ['x86_64', 'aarch_64']
+        release = f'protoc-{version}-osx-{machine}'
+    elif system == 'Windows':
+        assert machine in ['x86_64', 'x86_32']
+        if machine == 'x86_64':
+            release = f'protoc-{version}-win64'
+        elif machine == 'x86_32':
+            release = f'protoc-{version}-win32'
+
+    path = os.path.join(os.path.dirname(__file__), release)
+    executable = os.path.join(path, 'bin', 'protoc')
+    if system == 'Windows':
+        executable = executable + '.exe'
+
+    # if we already have it downloaded, return it
+    if os.path.exists(executable):
+        return executable
+
+    # otherwise download
+    zip_name = f'{release}.zip'
+    zip_dest = os.path.join(os.path.dirname(__file__), zip_name)
+    base_url = 'https://github.com/protocolbuffers/protobuf/releases/download'
+    release_url = f'{base_url}/v{version}/{zip_name}'
+    urllib.request.urlretrieve(url=release_url, filename=zip_dest)
+    zipfile.ZipFile(zip_dest).extractall(path)
+
+    assert os.path.exists(executable)
+    if system != 'Windows':
+        # zip format doesn't always handle unix permissions well
+        # mark the executable as executable in case it isn't
+        os.chmod(executable, 0o777)
+    return executable
