@@ -49,8 +49,10 @@ setup_requires =
 requires = ["setuptools", "setuptools-protobuf"]
 
 [tool.setuptools-protobuf]
-mypy = true
 protobufs = ["example/foo.proto"]
+
+# Require the generation of typing hints:
+mypy = true
 
 # Optionally, set the specific protoc version to use:
 protoc_version = '25.1'
