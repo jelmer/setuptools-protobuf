@@ -19,7 +19,7 @@ Optionally, it can also generate typing hints if the ``mypy`` extra is selected.
 
 You can configure `setuptools-protobuf` in either `setup.py`, `setup.cfg` or `pyproject.toml`.
 
-## setup.py
+### setup.py
 
 ```python
 from setuptools_protobuf import Protobuf
@@ -31,7 +31,7 @@ setup(
 )
 ```
 
-## setup.cfg
+### setup.cfg
 
 ```ini
 ...
@@ -42,7 +42,7 @@ setup_requires =
     setuptools-protobuf
 ```
 
-## pyproject.toml
+### pyproject.toml
 
 ```toml
 [build-system]
@@ -56,4 +56,14 @@ mypy = true
 
 # Optionally, set the specific protoc version to use:
 protoc_version = '25.1'
+```
+
+## GitHub actions
+
+To install protoc in a GitHub action, you can use the
+[setup-protoc](https://github.com/arduino/setup-protoc) action:
+
+```yaml
+- name: Install Protoc
+  uses: arduino/setup-protoc@v2
 ```
