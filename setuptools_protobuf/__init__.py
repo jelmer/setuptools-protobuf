@@ -99,7 +99,7 @@ def pyprojecttoml_config(dist: Distribution) -> None:
     clean = dist.get_command_class("clean")
     clean.sub_commands.insert(0, ("clean_protobuf", has_protobuf))
 
-    dist.protoc = None  # type: ignore
+    dist.protoc_version = None  # type: ignore
 
     if sys.version_info[:2] >= (3, 11):
         from tomllib import load as toml_load
