@@ -15,6 +15,10 @@ PROTOC environment variable.
 
 Optionally, it can also generate typing hints if the ``mypy`` extra is selected.
 
+There is no separate ``install_proto`` command; generated files (e.g. \_pb2.py
+files) are placed in the source tree and expected to be installed by other
+install commands.
+
 ## Usage
 
 You can configure `setuptools-protobuf` in either `setup.py`, `setup.cfg` or `pyproject.toml`.
