@@ -162,7 +162,7 @@ def get_protoc(version):
         return None
 
     # determine the release string including system and machine info of protoc
-    machine = platform.machine()
+    machine = platform.machine().lower()
     if machine in ['amd64', 'x64', 'x86_64']:
         machine = 'x86_64'
     elif machine in ['aarch64', 'arm64', 'aarch_64']:
