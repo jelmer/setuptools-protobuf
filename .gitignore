@@ -4,3 +4,4 @@ __pycache__
 setuptools_protobuf.egg-info/
 .tox
 *~
+.*.swp
