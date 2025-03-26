@@ -5,6 +5,7 @@ import os
 import platform
 import subprocess
 import sys
+from typing import Optional
 import urllib.request
 import zipfile
 
@@ -23,7 +24,7 @@ class build_protobuf(Command):
     """Build .proto files.
     """
 
-    user_options: list[tuple[str, str | None, str]] = [  # type: ignore
+    user_options: list[tuple[str, Optional[str], str]] = [  # type: ignore
         ('protoc', None, 'path of compiler protoc')]
     description = 'build .proto files'
 
@@ -148,7 +149,7 @@ def protobufs(dist, keyword, value):
     dist.protobufs = value
 
 
-def find_executable(executable: str) -> str | None:
+def find_executable(executable: str) -> Optional[str]:
     """Find an executable in the PATH.
 
     Args:
@@ -174,7 +175,7 @@ def find_executable(executable: str) -> str | None:
     return None
 
 
-def get_protoc(version) -> str | None:
+def get_protoc(version) -> Optional[str]:
     """Download and return the path to the protoc binary for the given version.
 
     If version is None, the system protoc is returned if available.
