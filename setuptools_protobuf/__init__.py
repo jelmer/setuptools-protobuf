@@ -1,3 +1,6 @@
+"""Setuptools extension for compiling .proto files.
+"""
+
 import os
 import platform
 import subprocess
@@ -17,7 +20,10 @@ def has_protobuf(command):
 
 
 class build_protobuf(Command):
-    user_options: list[tuple[str, str | None, str]] = [
+    """Build .proto files.
+    """
+
+    user_options: list[tuple[str, str | None, str]] = [  # type: ignore
         ('protoc', None, 'path of compiler protoc')]
     description = 'build .proto files'
 
@@ -71,6 +77,9 @@ class build_protobuf(Command):
 
 
 class clean_protobuf(Command):
+    """Clean output of .proto files.
+    """
+
     description = 'clean .proto files'
 
     def run(self):
@@ -118,6 +127,8 @@ def pyprojecttoml_config(dist: Distribution) -> None:
 
 
 class Protobuf:
+    """A protobuf file to compile.
+    """
 
     def __init__(self, path, mypy=None):
         self.path = path
@@ -125,7 +136,7 @@ class Protobuf:
             mypy = find_executable('protoc-gen-mypy') is not None
         self.mypy = mypy
 
-    def outputs(self):
+    def outputs(self) -> list[str]:
         return [self.path[:-len('.proto')] + '_pb2.py']
 
 
