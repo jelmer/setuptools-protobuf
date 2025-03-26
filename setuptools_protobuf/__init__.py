@@ -1,3 +1,6 @@
+"""Setuptools extension for compiling .proto files.
+"""
+
 import os
 import platform
 import subprocess
@@ -17,7 +20,11 @@ def has_protobuf(command):
 
 
 class build_protobuf(Command):
-    user_options = [('protoc', None, 'path of compiler protoc')]
+    """Build .proto files.
+    """
+
+    user_options: list[tuple[str, str | None, str]] = [  # type: ignore
+        ('protoc', None, 'path of compiler protoc')]
     description = 'build .proto files'
 
     def initialize_options(self):
@@ -59,16 +66,20 @@ class build_protobuf(Command):
                 raise ExecError(f'error running protoc: {e.returncode}')
             self.outfiles.extend(protobuf.outputs())
 
-    def get_inputs(self):
+    def get_inputs(self) -> list[str]:
         return [
             protobuf.path
             for protobuf in self.distribution.protobufs]  # type: ignore
 
-    def get_outputs(self):
+    def get_outputs(self) -> list[str]:
+        """Return the list of output files for the command."""
         return self.outfiles
 
 
 class clean_protobuf(Command):
+    """Clean output of .proto files.
+    """
+
     description = 'clean .proto files'
 
     def run(self):
@@ -116,6 +127,8 @@ def pyprojecttoml_config(dist: Distribution) -> None:
 
 
 class Protobuf:
+    """A protobuf file to compile.
+    """
 
     def __init__(self, path, mypy=None):
         self.path = path
@@ -123,7 +136,7 @@ class Protobuf:
             mypy = find_executable('protoc-gen-mypy') is not None
         self.mypy = mypy
 
-    def outputs(self):
+    def outputs(self) -> list[str]:
         return [self.path[:-len('.proto')] + '_pb2.py']
 
 
@@ -135,7 +148,12 @@ def protobufs(dist, keyword, value):
     dist.protobufs = value
 
 
-def find_executable(executable):
+def find_executable(executable: str) -> str | None:
+    """Find an executable in the PATH.
+
+    Args:
+      executable: The name of the executable to find.
+    """
     _, ext = os.path.splitext(executable)
     if sys.platform == 'win32' and ext != '.exe':
         executable = executable + '.exe'
@@ -156,7 +174,17 @@ def find_executable(executable):
     return None
 
 
-def get_protoc(version):
+def get_protoc(version) -> str | None:
+    """Download and return the path to the protoc binary for the given version.
+
+    If version is None, the system protoc is returned if available.
+
+    Args:
+      version: The version of protoc to download.
+
+    Returns:
+      path to the protoc binary
+    """
     # handle if no version requested (use system/env)
     if version is None:
         return None
