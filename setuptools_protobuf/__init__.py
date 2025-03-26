@@ -17,7 +17,8 @@ def has_protobuf(command):
 
 
 class build_protobuf(Command):
-    user_options = [('protoc', None, 'path of compiler protoc')]
+    user_options: list[tuple[str, str | None, str]] = [
+        ('protoc', None, 'path of compiler protoc')]
     description = 'build .proto files'
 
     def initialize_options(self):
@@ -59,12 +60,13 @@ class build_protobuf(Command):
                 raise ExecError(f'error running protoc: {e.returncode}')
             self.outfiles.extend(protobuf.outputs())
 
-    def get_inputs(self):
+    def get_inputs(self) -> list[str]:
         return [
             protobuf.path
             for protobuf in self.distribution.protobufs]  # type: ignore
 
-    def get_outputs(self):
+    def get_outputs(self) -> list[str]:
+        """Return the list of output files for the command."""
         return self.outfiles
 
 
@@ -135,7 +137,12 @@ def protobufs(dist, keyword, value):
     dist.protobufs = value
 
 
-def find_executable(executable):
+def find_executable(executable: str) -> str | None:
+    """Find an executable in the PATH.
+
+    Args:
+      executable: The name of the executable to find.
+    """
     _, ext = os.path.splitext(executable)
     if sys.platform == 'win32' and ext != '.exe':
         executable = executable + '.exe'
@@ -156,7 +163,17 @@ def find_executable(executable):
     return None
 
 
-def get_protoc(version):
+def get_protoc(version) -> str | None:
+    """Download and return the path to the protoc binary for the given version.
+
+    If version is None, the system protoc is returned if available.
+
+    Args:
+      version: The version of protoc to download.
+
+    Returns:
+      path to the protoc binary
+    """
     # handle if no version requested (use system/env)
     if version is None:
         return None
