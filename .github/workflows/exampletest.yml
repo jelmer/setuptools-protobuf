@@ -32,8 +32,7 @@ jobs:
           python -m pip install --upgrade setuptools build
       - name: Build and install the package
         run: |
-          python -m build
-          pip install dist/*.whl
+          python -m pip install .
       - name: Validate that example builds 
         run: |
           # --no-isolation, so that we use the version we've just built.
