@@ -67,7 +67,7 @@ class build_protobuf(Command):
                 raise ExecError(f'error running protoc: {e.returncode}')
             self.outfiles.extend(protobuf.outputs())
 
-    def get_inputs(self) -> list[str]:
+    def get_source_files(self) -> list[str]:
         return [
             protobuf.path
             for protobuf in self.distribution.protobufs]  # type: ignore
