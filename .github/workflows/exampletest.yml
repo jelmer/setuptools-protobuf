@@ -37,4 +37,4 @@ jobs:
       - name: Validate that example builds 
         run: |
           # --no-isolation, so that we use the version we've just built.
-          python -m build --no-isolation --example
+          python -m build --no-isolation example
