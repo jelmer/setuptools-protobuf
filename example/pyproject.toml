@@ -7,3 +7,4 @@ version = "0.0.1"
 
 [tool.setuptools-protobuf]
 protobufs = ["example/foo.proto"]
+protoc_version = "31.1"
