@@ -1,3 +1,3 @@
-__all__ = ['Example']
+__all__ = ["Example"]
 
 from .foo_pb2 import Example
