@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools", "setuptools-protobuf"]
+
+[project]
+name = "example_src_layout"
+version = "0.0.1"
+
+[tool.setuptools-protobuf]
+protobufs = ["example_src_layout/foo.proto", "example_src_layout/bar.proto"]
+proto_path = "src"
+protoc_version = "31.1"
