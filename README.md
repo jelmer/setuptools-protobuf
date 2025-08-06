@@ -60,6 +60,9 @@ mypy = true
 
 # Optionally, set the specific protoc version to use:
 protoc_version = '25.1'
+
+# Optionally, set a proto file search path (`--proto_path` or `-I` option to protoc)
+proto_path = "src"
 ```
 
 ## GitHub actions

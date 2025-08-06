@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+import "example_src_layout/foo.proto";
+
+message Example2 {
+    optional Example example = 1;
+};

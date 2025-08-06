@@ -8,6 +8,7 @@ import sys
 from typing import Optional
 import urllib.request
 import zipfile
+from pathlib import Path
 
 from setuptools import Command
 from setuptools.dist import Distribution
@@ -43,7 +44,7 @@ class build_protobuf(Command):
 
     def run(self):
         for protobuf in getattr(self.distribution, 'protobufs', []):
-            source_mtime = os.path.getmtime(protobuf.path)
+            source_mtime = os.path.getmtime(protobuf.resolved_path)
             for output in protobuf.outputs():
                 try:
                     output_mtime = os.path.getmtime(output)
@@ -54,12 +55,15 @@ class build_protobuf(Command):
                         break
             else:
                 continue
-            command = [self.protoc, '--python_out=.']
+            command = [self.protoc, f'--python_out={protobuf.outputs_path()}']
             if protobuf.mypy:
-                command.append('--mypy_out=.')
-            command.append(protobuf.path)
+                command.append(f'--mypy_out={protobuf.outputs_path()}')
+            if protobuf.proto_path:
+                command.append(f'--proto_path={protobuf.proto_path}')
+            command.append(protobuf.resolved_path)
             sys.stderr.write(
-                'creating %r from %s\n' % (protobuf.outputs(), protobuf.path))
+                'creating %r from %s\n' %
+                (protobuf.outputs(), protobuf.resolved_path))
             # TODO(jelmer): Support e.g. building mypy ?
             try:
                 subprocess.check_call(command, )
@@ -100,9 +104,12 @@ class clean_protobuf(Command):
 
 def load_pyproject_config(dist: Distribution, cfg) -> None:
     mypy = cfg.get("mypy")
+    proto_path = cfg.get("proto_path")
     dist.protoc_version = cfg.get("protoc_version")  # type: ignore
     dist.protobufs = [  # type: ignore
-        Protobuf(pb, mypy=mypy) for pb in cfg.get("protobufs")]
+        Protobuf(pb, mypy=mypy, proto_path=proto_path)
+        for pb in cfg.get("protobufs")
+    ]
 
 
 def pyprojecttoml_config(dist: Distribution) -> None:
@@ -131,14 +138,22 @@ class Protobuf:
     """A protobuf file to compile.
     """
 
-    def __init__(self, path, mypy=None):
+    def __init__(self, path, mypy=None, proto_path=None):
         self.path = path
+        self.proto_path = proto_path
+        if self.proto_path:
+            self.resolved_path = str(Path(self.proto_path, self.path))
+        else:
+            self.resolved_path = self.path
         if mypy is None:
             mypy = find_executable('protoc-gen-mypy') is not None
         self.mypy = mypy
 
     def outputs(self) -> list[str]:
-        return [self.path[:-len('.proto')] + '_pb2.py']
+        return [self.resolved_path[:-len('.proto')] + '_pb2.py']
+
+    def outputs_path(self) -> str:
+        return self.proto_path or '.'
 
 
 def protobufs(dist, keyword, value):
