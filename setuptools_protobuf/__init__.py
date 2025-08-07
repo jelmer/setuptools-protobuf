@@ -43,7 +43,7 @@ class build_protobuf(Command):  # noqa: N801
         """
         self.protoc = (
             os.environ.get("PROTOC")
-            or get_protoc(getattr(self.distribution, "protoc_version"))
+            or get_protoc(getattr(self.distribution, "protoc_version", None))
             or find_executable("protoc")
         )
         self.outfiles = []
@@ -196,7 +196,8 @@ class Protobuf:
         self.path = path
         self.proto_path = proto_path
         if self.proto_path:
-            self.resolved_path = str(Path(self.proto_path, self.path))
+            # Use Path for joining but convert to forward slashes for consistency
+            self.resolved_path = str(Path(self.proto_path, self.path)).replace(os.sep, "/")
         else:
             self.resolved_path = self.path
         if mypy is None:

@@ -206,13 +206,22 @@ class TestFindExecutable(unittest.TestCase):
 
     def test_find_absolute_path_exists(self):
         """Test finding executable with absolute path that exists."""
-        # Test with an actual file
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        # Create a temporary file and close it so find_executable can access it
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".exe" if sys.platform == "win32" else ""
+        ) as f:
+            temp_path = f.name
+        
+        try:
+            result = find_executable(temp_path)
+            assert result == temp_path
+        finally:
+            # Clean up the file
             try:
-                result = find_executable(f.name)
-                assert result == f.name
-            finally:
-                os.unlink(f.name)
+                os.unlink(temp_path)
+            except (OSError, PermissionError):
+                # On Windows, file might still be in use
+                pass
 
     def test_find_absolute_path_not_exists(self):
         """Test finding executable with absolute path that doesn't exist."""
