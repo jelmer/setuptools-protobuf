@@ -43,7 +43,7 @@ class build_protobuf(Command):  # noqa: N801
         """
         self.protoc = (
             os.environ.get("PROTOC")
-            or get_protoc(getattr(self.distribution, "protoc_version"))
+            or get_protoc(getattr(self.distribution, "protoc_version", None))
             or find_executable("protoc")
         )
         self.outfiles = []
