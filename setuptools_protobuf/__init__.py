@@ -13,7 +13,7 @@ from setuptools import Command
 from setuptools.dist import Distribution
 from setuptools.errors import ExecError, PlatformError  # type: ignore
 
-__version__ = (0, 1, 14)
+__version__ = (0, 1, 15)
 
 
 def has_protobuf(command):
