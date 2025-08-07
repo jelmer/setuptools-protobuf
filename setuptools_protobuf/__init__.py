@@ -1,5 +1,4 @@
-"""Setuptools extension for compiling .proto files.
-"""
+"""Setuptools extension for compiling .proto files."""
 
 import os
 import platform
@@ -18,32 +17,33 @@ __version__ = (0, 1, 14)
 
 
 def has_protobuf(command):
-    return bool(getattr(command.distribution, 'protobufs', []))
+    return bool(getattr(command.distribution, "protobufs", []))
 
 
 class build_protobuf(Command):
-    """Build .proto files.
-    """
+    """Build .proto files."""
 
     user_options: list[tuple[str, Optional[str], str]] = [  # type: ignore
-        ('protoc', None, 'path of compiler protoc')]
-    description = 'build .proto files'
+        ("protoc", None, "path of compiler protoc")
+    ]
+    description = "build .proto files"
 
     def initialize_options(self):
         self.protoc = (
-            os.environ.get('PROTOC')
-            or get_protoc(getattr(self.distribution, 'protoc_version'))
-            or find_executable('protoc'))
+            os.environ.get("PROTOC")
+            or get_protoc(getattr(self.distribution, "protoc_version"))
+            or find_executable("protoc")
+        )
         self.outfiles = []
 
     def finalize_options(self):
         if self.protoc is None or not os.path.exists(self.protoc):
             raise PlatformError(
-                "Unable to find protobuf compiler %s"
-                % (self.protoc or 'protoc'))
+                "Unable to find protobuf compiler %s" % (self.protoc or "protoc")
+            )
 
     def run(self):
-        for protobuf in getattr(self.distribution, 'protobufs', []):
+        for protobuf in getattr(self.distribution, "protobufs", []):
             source_mtime = os.path.getmtime(protobuf.resolved_path)
             for output in protobuf.outputs():
                 try:
@@ -55,26 +55,26 @@ class build_protobuf(Command):
                         break
             else:
                 continue
-            command = [self.protoc, f'--python_out={protobuf.outputs_path()}']
+            command = [self.protoc, f"--python_out={protobuf.outputs_path()}"]
             if protobuf.mypy:
-                command.append(f'--mypy_out={protobuf.outputs_path()}')
+                command.append(f"--mypy_out={protobuf.outputs_path()}")
             if protobuf.proto_path:
-                command.append(f'--proto_path={protobuf.proto_path}')
+                command.append(f"--proto_path={protobuf.proto_path}")
             command.append(protobuf.resolved_path)
             sys.stderr.write(
-                'creating %r from %s\n' %
-                (protobuf.outputs(), protobuf.resolved_path))
+                "creating %r from %s\n" % (protobuf.outputs(), protobuf.resolved_path)
+            )
             # TODO(jelmer): Support e.g. building mypy ?
             try:
-                subprocess.check_call(command, )
+                subprocess.check_call(
+                    command,
+                )
             except subprocess.CalledProcessError as e:
-                raise ExecError(f'error running protoc: {e.returncode}')
+                raise ExecError(f"error running protoc: {e.returncode}")
             self.outfiles.extend(protobuf.outputs())
 
     def get_source_files(self) -> list[str]:
-        return [
-            protobuf.path
-            for protobuf in self.distribution.protobufs]  # type: ignore
+        return [protobuf.path for protobuf in self.distribution.protobufs]  # type: ignore
 
     def get_outputs(self) -> list[str]:
         """Return the list of output files for the command."""
@@ -82,13 +82,12 @@ class build_protobuf(Command):
 
 
 class clean_protobuf(Command):
-    """Clean output of .proto files.
-    """
+    """Clean output of .proto files."""
 
-    description = 'clean .proto files'
+    description = "clean .proto files"
 
     def run(self):
-        for protobuf in getattr(self, 'protobufs', []):
+        for protobuf in getattr(self, "protobufs", []):
             for output in protobuf.outputs():
                 try:
                     os.unlink(output)
@@ -107,8 +106,7 @@ def load_pyproject_config(dist: Distribution, cfg) -> None:
     proto_path = cfg.get("proto_path")
     dist.protoc_version = cfg.get("protoc_version")  # type: ignore
     dist.protobufs = [  # type: ignore
-        Protobuf(pb, mypy=mypy, proto_path=proto_path)
-        for pb in cfg.get("protobufs")
+        Protobuf(pb, mypy=mypy, proto_path=proto_path) for pb in cfg.get("protobufs")
     ]
 
 
@@ -135,8 +133,7 @@ def pyprojecttoml_config(dist: Distribution) -> None:
 
 
 class Protobuf:
-    """A protobuf file to compile.
-    """
+    """A protobuf file to compile."""
 
     def __init__(self, path, mypy=None, proto_path=None):
         self.path = path
@@ -146,14 +143,14 @@ class Protobuf:
         else:
             self.resolved_path = self.path
         if mypy is None:
-            mypy = find_executable('protoc-gen-mypy') is not None
+            mypy = find_executable("protoc-gen-mypy") is not None
         self.mypy = mypy
 
     def outputs(self) -> list[str]:
-        return [self.resolved_path[:-len('.proto')] + '_pb2.py']
+        return [self.resolved_path[: -len(".proto")] + "_pb2.py"]
 
     def outputs_path(self) -> str:
-        return self.proto_path or '.'
+        return self.proto_path or "."
 
 
 def protobufs(dist, keyword, value):
@@ -171,13 +168,13 @@ def find_executable(executable: str) -> Optional[str]:
       executable: The name of the executable to find.
     """
     _, ext = os.path.splitext(executable)
-    if sys.platform == 'win32' and ext != '.exe':
-        executable = executable + '.exe'
+    if sys.platform == "win32" and ext != ".exe":
+        executable = executable + ".exe"
 
     if os.path.isfile(executable):
         return executable
 
-    path = os.environ.get('PATH', os.defpath)
+    path = os.environ.get("PATH", os.defpath)
     # PATH='' doesn't match, whereas PATH=':' looks in the current directory
     if not path:
         return None
@@ -207,49 +204,49 @@ def get_protoc(version) -> Optional[str]:
 
     # determine the release string including system and machine info of protoc
     machine = platform.machine().lower()
-    if machine in ['amd64', 'x64', 'x86_64']:
-        machine = 'x86_64'
-    elif machine in ['aarch64', 'arm64', 'aarch_64']:
-        machine = 'aarch_64'
-    elif machine in ['i386', 'i686', 'x86', 'x86_32']:
-        machine = 'x86_32'
-    elif machine in ['ppc64le', 'ppcle64', 'ppcle_64']:
-        machine = 'ppcle_64'
-    elif machine in ['s390', 's390x', 's390_64']:
-        machine = 's390_64'
+    if machine in ["amd64", "x64", "x86_64"]:
+        machine = "x86_64"
+    elif machine in ["aarch64", "arm64", "aarch_64"]:
+        machine = "aarch_64"
+    elif machine in ["i386", "i686", "x86", "x86_32"]:
+        machine = "x86_32"
+    elif machine in ["ppc64le", "ppcle64", "ppcle_64"]:
+        machine = "ppcle_64"
+    elif machine in ["s390", "s390x", "s390_64"]:
+        machine = "s390_64"
 
     system = platform.system()
-    if system == 'Linux':
-        release = f'protoc-{version}-linux-{machine}'
-    elif system == 'Darwin':
-        assert machine in ['x86_64', 'aarch_64']
-        release = f'protoc-{version}-osx-{machine}'
-    elif system == 'Windows':
-        assert machine in ['x86_64', 'x86_32']
-        if machine == 'x86_64':
-            release = f'protoc-{version}-win64'
-        elif machine == 'x86_32':
-            release = f'protoc-{version}-win32'
+    if system == "Linux":
+        release = f"protoc-{version}-linux-{machine}"
+    elif system == "Darwin":
+        assert machine in ["x86_64", "aarch_64"]
+        release = f"protoc-{version}-osx-{machine}"
+    elif system == "Windows":
+        assert machine in ["x86_64", "x86_32"]
+        if machine == "x86_64":
+            release = f"protoc-{version}-win64"
+        elif machine == "x86_32":
+            release = f"protoc-{version}-win32"
 
     path = os.path.join(os.path.dirname(__file__), release)
-    executable = os.path.join(path, 'bin', 'protoc')
-    if system == 'Windows':
-        executable = executable + '.exe'
+    executable = os.path.join(path, "bin", "protoc")
+    if system == "Windows":
+        executable = executable + ".exe"
 
     # if we already have it downloaded, return it
     if os.path.exists(executable):
         return executable
 
     # otherwise download
-    zip_name = f'{release}.zip'
+    zip_name = f"{release}.zip"
     zip_dest = os.path.join(os.path.dirname(__file__), zip_name)
-    base_url = 'https://github.com/protocolbuffers/protobuf/releases/download'
-    release_url = f'{base_url}/v{version}/{zip_name}'
+    base_url = "https://github.com/protocolbuffers/protobuf/releases/download"
+    release_url = f"{base_url}/v{version}/{zip_name}"
     urllib.request.urlretrieve(url=release_url, filename=zip_dest)
     zipfile.ZipFile(zip_dest).extractall(path)
 
     assert os.path.exists(executable)
-    if system != 'Windows':
+    if system != "Windows":
         # zip format doesn't always handle unix permissions well
         # mark the executable as executable in case it isn't
         os.chmod(executable, 0o777)
