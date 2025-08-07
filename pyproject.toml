@@ -55,3 +55,6 @@ version = {attr = "setuptools_protobuf.__version__"}
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.ruff]
+exclude = ["build"]
