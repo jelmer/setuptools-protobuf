@@ -1,3 +1,5 @@
+"""Unit tests for setuptools-protobuf package."""
+
 import os
 import sys
 import tempfile
@@ -21,7 +23,10 @@ from setuptools_protobuf import (
 
 
 class TestProtobuf(unittest.TestCase):
+    """Test cases for the Protobuf class."""
+
     def test_protobuf_basic(self):
+        """Test basic Protobuf instance creation and properties."""
         pb = Protobuf("foo.proto")
         assert pb.outputs() == ["foo_pb2.py"]
         assert pb.mypy in (False, True)
@@ -29,12 +34,14 @@ class TestProtobuf(unittest.TestCase):
         assert pb.outputs_path() == "."
 
     def test_protobuf_with_proto_path(self):
+        """Test Protobuf instance with custom proto_path."""
         pb = Protobuf("bar.proto", proto_path="src/protos")
         assert pb.outputs() == ["src/protos/bar_pb2.py"]
         assert pb.resolved_path == "src/protos/bar.proto"
         assert pb.outputs_path() == "src/protos"
 
     def test_protobuf_mypy_explicit(self):
+        """Test explicit mypy flag configuration."""
         pb = Protobuf("foo.proto", mypy=True)
         assert pb.mypy is True
 
@@ -42,11 +49,13 @@ class TestProtobuf(unittest.TestCase):
         assert pb.mypy is False
 
     def test_protobuf_nested_path(self):
+        """Test Protobuf with nested directory path."""
         pb = Protobuf("subdir/test.proto")
         assert pb.outputs() == ["subdir/test_pb2.py"]
         assert pb.resolved_path == "subdir/test.proto"
 
     def test_protobuf_with_proto_path_nested(self):
+        """Test Protobuf with proto_path and nested messages directory."""
         pb = Protobuf("messages/user.proto", proto_path="proto")
         assert pb.outputs() == ["proto/messages/user_pb2.py"]
         assert pb.resolved_path == "proto/messages/user.proto"
@@ -54,40 +63,50 @@ class TestProtobuf(unittest.TestCase):
 
 
 class TestBuildProtobuf(unittest.TestCase):
+    """Test cases for the build_protobuf command."""
+
     def setUp(self):
+        """Set up test fixtures for build_protobuf tests."""
         self.dist = Distribution()
         self.cmd = build_protobuf(self.dist)
 
     def test_initialize_options_defaults(self):
+        """Test default initialization of build_protobuf options."""
         self.cmd.initialize_options()
-        # Should set protoc to something (env var, get_protoc result, or find_executable result)
+        # Should set protoc to something (env var, get_protoc result, or
+        # find_executable result)
         assert hasattr(self.cmd, "protoc")
         assert self.cmd.outfiles == []
 
     def test_initialize_options_with_env(self):
+        """Test initialization with PROTOC environment variable."""
         with patch.dict(os.environ, {"PROTOC": "/custom/protoc"}):
             cmd = build_protobuf(self.dist)
             cmd.initialize_options()
             assert cmd.protoc == "/custom/protoc"
 
     def test_finalize_options_missing_protoc(self):
+        """Test error handling when protoc executable is missing."""
         self.cmd.protoc = "/nonexistent/protoc"
         with self.assertRaises(PlatformError) as ctx:
             self.cmd.finalize_options()
         assert "Unable to find protobuf compiler" in str(ctx.exception)
 
     def test_finalize_options_none_protoc(self):
+        """Test error handling when protoc is None."""
         self.cmd.protoc = None
         with self.assertRaises(PlatformError) as ctx:
             self.cmd.finalize_options()
         assert "Unable to find protobuf compiler" in str(ctx.exception)
 
     def test_get_source_files_empty(self):
+        """Test get_source_files with no protobufs."""
         self.dist.protobufs = []
         files = self.cmd.get_source_files()
         assert files == []
 
     def test_get_source_files_multiple(self):
+        """Test get_source_files with multiple protobuf files."""
         pb1 = Protobuf("test1.proto")
         pb2 = Protobuf("dir/test2.proto")
         pb3 = Protobuf("test3.proto", proto_path="proto")
@@ -97,14 +116,17 @@ class TestBuildProtobuf(unittest.TestCase):
         assert files == ["test1.proto", "dir/test2.proto", "test3.proto"]
 
     def test_get_outputs(self):
+        """Test get_outputs returns the outfiles list."""
         self.cmd.outfiles = ["test_pb2.py", "other_pb2.py"]
         assert self.cmd.get_outputs() == ["test_pb2.py", "other_pb2.py"]
 
     def test_get_outputs_empty(self):
+        """Test get_outputs with empty outfiles list."""
         self.cmd.outfiles = []
         assert self.cmd.get_outputs() == []
 
     def test_run_no_protobufs(self):
+        """Test run method with no protobuf files."""
         self.dist.protobufs = []
         self.cmd.protoc = "/usr/bin/protoc"
         # Should run without error when no protobufs
@@ -112,6 +134,7 @@ class TestBuildProtobuf(unittest.TestCase):
         assert self.cmd.outfiles == []
 
     def test_run_integration(self):
+        """Integration test for build_protobuf with actual files."""
         # Integration test with actual temp files
         with tempfile.TemporaryDirectory() as tmpdir:
             proto_file = Path(tmpdir) / "test.proto"
@@ -136,21 +159,27 @@ class TestBuildProtobuf(unittest.TestCase):
 
 
 class TestCleanProtobuf(unittest.TestCase):
+    """Test cases for the clean_protobuf command."""
+
     def setUp(self):
+        """Set up test fixtures for clean_protobuf tests."""
         self.dist = Distribution()
         self.cmd = clean_protobuf(self.dist)
 
     def test_initialize_finalize_options(self):
+        """Test initialize and finalize options methods."""
         # Should not raise
         self.cmd.initialize_options()
         self.cmd.finalize_options()
 
     def test_run_no_protobufs(self):
+        """Test run method with no protobuf files."""
         self.cmd.protobufs = []
         # Should run without error
         self.cmd.run()
 
     def test_run_with_temp_files(self):
+        """Test cleaning actual generated protobuf files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create actual output file
             output_file = Path(tmpdir) / "test_pb2.py"
@@ -165,6 +194,7 @@ class TestCleanProtobuf(unittest.TestCase):
             assert not output_file.exists()
 
     def test_run_file_already_missing(self):
+        """Test run method when files are already missing."""
         pb = Protobuf("nonexistent.proto")
         self.cmd.protobufs = [pb]
         # Should not raise even if file doesn't exist
@@ -172,7 +202,10 @@ class TestCleanProtobuf(unittest.TestCase):
 
 
 class TestFindExecutable(unittest.TestCase):
+    """Test cases for the find_executable function."""
+
     def test_find_absolute_path_exists(self):
+        """Test finding executable with absolute path that exists."""
         # Test with an actual file
         with tempfile.NamedTemporaryFile(delete=False) as f:
             try:
@@ -182,10 +215,12 @@ class TestFindExecutable(unittest.TestCase):
                 os.unlink(f.name)
 
     def test_find_absolute_path_not_exists(self):
+        """Test finding executable with absolute path that doesn't exist."""
         result = find_executable("/definitely/not/a/real/path/protoc")
         assert result is None
 
     def test_find_in_path(self):
+        """Test finding executable in system PATH."""
         # Test finding actual executables that likely exist
         for cmd in ["python", "python3", sys.executable]:
             result = find_executable(cmd)
@@ -195,15 +230,18 @@ class TestFindExecutable(unittest.TestCase):
                 break
 
     def test_not_found(self):
+        """Test when executable is not found anywhere."""
         result = find_executable("definitely_not_a_real_executable_name_12345")
         assert result is None
 
     def test_empty_path(self):
+        """Test finding executable with empty PATH environment variable."""
         with patch.dict(os.environ, {"PATH": ""}):
             result = find_executable("protoc")
             assert result is None
 
     def test_windows_exe_extension(self):
+        """Test that .exe extension is added on Windows."""
         if sys.platform == "win32":
             # On Windows, test that .exe is added
             result = find_executable("python")
@@ -212,11 +250,15 @@ class TestFindExecutable(unittest.TestCase):
 
 
 class TestGetProtoc(unittest.TestCase):
+    """Test cases for the get_protoc function."""
+
     def test_none_version(self):
+        """Test get_protoc with None version."""
         result = get_protoc(None)
         assert result is None
 
     def test_version_string_format(self):
+        """Test get_protoc handles version strings correctly."""
         # Test that the function handles version strings correctly
         # without actually downloading
         import platform
@@ -260,23 +302,29 @@ class TestGetProtoc(unittest.TestCase):
 
 
 class TestHasProtobuf(unittest.TestCase):
+    """Test cases for the has_protobuf function."""
+
     def test_has_protobuf_true(self):
+        """Test has_protobuf returns True when protobufs exist."""
         cmd = MagicMock()
         cmd.distribution.protobufs = [Protobuf("test.proto")]
         assert has_protobuf(cmd) is True
 
     def test_has_protobuf_empty_list(self):
+        """Test has_protobuf returns False for empty list."""
         cmd = MagicMock()
         cmd.distribution.protobufs = []
         assert has_protobuf(cmd) is False
 
     def test_has_protobuf_no_attribute(self):
+        """Test has_protobuf returns False when attribute doesn't exist."""
         cmd = MagicMock()
         # Explicitly delete the attribute to test getattr default
         del cmd.distribution.protobufs
         assert has_protobuf(cmd) is False
 
     def test_has_protobuf_multiple(self):
+        """Test has_protobuf returns True for multiple protobufs."""
         cmd = MagicMock()
         cmd.distribution.protobufs = [
             Protobuf("test1.proto"),
@@ -287,7 +335,10 @@ class TestHasProtobuf(unittest.TestCase):
 
 
 class TestLoadPyprojectConfig(unittest.TestCase):
+    """Test cases for the load_pyproject_config function."""
+
     def test_basic_config(self):
+        """Test loading basic configuration from pyproject.toml."""
         dist = Distribution()
         cfg = {
             "protobufs": ["test.proto", "other.proto"],
@@ -307,6 +358,7 @@ class TestLoadPyprojectConfig(unittest.TestCase):
         assert dist.protobufs[1].path == "other.proto"
 
     def test_minimal_config(self):
+        """Test loading minimal configuration."""
         dist = Distribution()
         cfg = {"protobufs": ["test.proto"]}
 
@@ -318,6 +370,7 @@ class TestLoadPyprojectConfig(unittest.TestCase):
         assert dist.protobufs[0].proto_path is None
 
     def test_config_no_protobufs(self):
+        """Test configuration with empty protobufs list."""
         dist = Distribution()
         cfg = {"protoc_version": "3.20.0", "protobufs": []}
 
@@ -327,6 +380,7 @@ class TestLoadPyprojectConfig(unittest.TestCase):
         assert dist.protobufs == []
 
     def test_config_with_mypy_false(self):
+        """Test configuration with mypy disabled."""
         dist = Distribution()
         cfg = {"protobufs": ["test.proto"], "mypy": False}
 
@@ -336,7 +390,10 @@ class TestLoadPyprojectConfig(unittest.TestCase):
 
 
 class TestPyprojecttomlConfig(unittest.TestCase):
+    """Test cases for the pyprojecttoml_config function."""
+
     def test_with_temp_pyproject(self):
+        """Test pyprojecttoml_config with temporary pyproject.toml file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             orig_cwd = os.getcwd()
             try:
@@ -365,6 +422,7 @@ protoc_version = "3.20.0"
                 os.chdir(orig_cwd)
 
     def test_commands_registered(self):
+        """Test that build and clean commands are properly registered."""
         dist = Distribution()
         pyprojecttoml_config(dist)
 
