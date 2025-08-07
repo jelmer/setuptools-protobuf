@@ -1,5 +1,5 @@
 ---
-name: Testing that the example builds.
+name: Build example
 
 "on":
   push:
@@ -33,7 +33,7 @@ jobs:
       - name: Build and install the package
         run: |
           python -m pip install .
-      - name: Validate that example builds 
+      - name: Validate that example builds
         run: |
-          # --no-isolation, so that we use the version we've just built.
+          # --no-isolation, so that we use the version we've just built
           python -m build --no-isolation example
