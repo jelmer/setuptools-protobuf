@@ -211,7 +211,7 @@ class TestFindExecutable(unittest.TestCase):
             delete=False, suffix=".exe" if sys.platform == "win32" else ""
         ) as f:
             temp_path = f.name
-        
+
         try:
             result = find_executable(temp_path)
             assert result == temp_path

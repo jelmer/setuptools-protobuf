@@ -197,7 +197,9 @@ class Protobuf:
         self.proto_path = proto_path
         if self.proto_path:
             # Use Path for joining but convert to forward slashes for consistency
-            self.resolved_path = str(Path(self.proto_path, self.path)).replace(os.sep, "/")
+            self.resolved_path = str(Path(self.proto_path, self.path)).replace(
+                os.sep, "/"
+            )
         else:
             self.resolved_path = self.path
         if mypy is None:
