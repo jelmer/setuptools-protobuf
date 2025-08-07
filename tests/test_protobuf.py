@@ -73,7 +73,8 @@ class TestBuildProtobuf(unittest.TestCase):
     def test_initialize_options_defaults(self):
         """Test default initialization of build_protobuf options."""
         self.cmd.initialize_options()
-        # Should set protoc to something (env var, get_protoc result, or find_executable result)
+        # Should set protoc to something (env var, get_protoc result, or
+        # find_executable result)
         assert hasattr(self.cmd, "protoc")
         assert self.cmd.outfiles == []
 

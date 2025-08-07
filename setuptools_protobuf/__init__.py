@@ -4,10 +4,10 @@ import os
 import platform
 import subprocess
 import sys
-from typing import Optional
 import urllib.request
 import zipfile
 from pathlib import Path
+from typing import Optional
 
 from setuptools import Command
 from setuptools.dist import Distribution
@@ -28,7 +28,7 @@ def has_protobuf(command):
     return bool(getattr(command.distribution, "protobufs", []))
 
 
-class build_protobuf(Command):
+class build_protobuf(Command):  # noqa: N801
     """Build .proto files."""
 
     user_options: list[tuple[str, Optional[str], str]] = [  # type: ignore
@@ -87,7 +87,7 @@ class build_protobuf(Command):
                 command.append(f"--proto_path={protobuf.proto_path}")
             command.append(protobuf.resolved_path)
             sys.stderr.write(
-                "creating %r from %s\n" % (protobuf.outputs(), protobuf.resolved_path)
+                f"creating {protobuf.outputs()!r} from {protobuf.resolved_path}\n"
             )
             # TODO(jelmer): Support e.g. building mypy ?
             try:
@@ -111,7 +111,7 @@ class build_protobuf(Command):
         return self.outfiles
 
 
-class clean_protobuf(Command):
+class clean_protobuf(Command):  # noqa: N801
     """Clean output of .proto files."""
 
     description = "clean .proto files"
