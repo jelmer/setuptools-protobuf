@@ -24,7 +24,7 @@ jobs:
     - name: Build wheels
       run: python -m build --wheel .
     - name: Upload wheels
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: artifact-${{ matrix.os }}
         path: ./dist/*.whl
@@ -41,7 +41,7 @@ jobs:
     - name: Build sdist
       run: python -m build --sdist
     - name: Upload sdist
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: artifact-source
         path: ./dist/*.tar.gz
@@ -59,7 +59,7 @@ jobs:
         # See https://github.com/pypa/twine/issues/1216
         pip install "twine>=6.1.0" "packaging>=24.2"
     - name: Download sdist
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         name: artifact-source
         path: dist
@@ -81,7 +81,7 @@ jobs:
       url: https://pypi.org/p/setuptools-protobuf
     steps:
     - name: Download distributions
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         pattern: artifact-*
         merge-multiple: true
