@@ -89,13 +89,20 @@ class build_protobuf(Command):  # noqa: N801
             sys.stderr.write(
                 f"creating {protobuf.outputs()!r} from {protobuf.resolved_path}\n"
             )
-            # TODO(jelmer): Support e.g. building mypy ?
             try:
                 subprocess.check_call(
                     command,
                 )
             except subprocess.CalledProcessError as e:
-                raise ExecError(f"error running protoc: {e.returncode}")
+                hint = ""
+                if protobuf.mypy and protobuf.mypy_auto_detected:
+                    hint = (
+                        " (mypy stub generation was auto-enabled because "
+                        "protoc-gen-mypy is on PATH; disable it by setting "
+                        "`mypy = false` under [tool.setuptools-protobuf] in "
+                        "pyproject.toml)"
+                    )
+                raise ExecError(f"error running protoc: {e.returncode}{hint}")
             self.outfiles.extend(protobuf.outputs())
 
     def get_source_files(self) -> list[str]:
@@ -190,7 +197,8 @@ class Protobuf:
 
         Args:
             path: Path to the .proto file.
-            mypy: Whether to generate mypy stubs. If None, auto-detects.
+            mypy: Whether to generate mypy stubs. If None, auto-detects based
+                on whether ``protoc-gen-mypy`` is available *and* runnable.
             proto_path: Base path for resolving imports in .proto files.
         """
         self.path = path
@@ -203,7 +211,23 @@ class Protobuf:
         else:
             self.resolved_path = self.path
         if mypy is None:
-            mypy = find_executable("protoc-gen-mypy") is not None
+            plugin = find_executable("protoc-gen-mypy")
+            if plugin is None:
+                mypy = False
+            elif _protoc_plugin_works(plugin):
+                mypy = True
+            else:
+                sys.stderr.write(
+                    f"warning: {plugin} is on PATH but fails to run; "
+                    "skipping mypy stub generation. Set `mypy = true` under "
+                    "[tool.setuptools-protobuf] in pyproject.toml to force it "
+                    "(and fix the plugin), or `mypy = false` to silence this "
+                    "warning.\n"
+                )
+                mypy = False
+            self.mypy_auto_detected = True
+        else:
+            self.mypy_auto_detected = False
         self.mypy = mypy
 
     def outputs(self) -> list[str]:
@@ -239,6 +263,43 @@ def protobufs(dist, keyword, value):
             raise TypeError(protobuf)
 
     dist.protobufs = value
+
+
+def _protoc_plugin_works(plugin: str) -> bool:
+    """Quickly check whether a protoc plugin binary can actually run.
+
+    protoc plugins are subprocesses that read a CodeGeneratorRequest on stdin
+    and write a CodeGeneratorResponse on stdout. Invoking one with empty stdin
+    is harmless: a working plugin exits cleanly (or with a benign error), but
+    one whose Python entry point cannot even import its module exits with a
+    ``ModuleNotFoundError`` traceback. We treat the latter as "not available"
+    so that auto-detection does not silently break the build.
+
+    Args:
+        plugin: Path to the plugin executable.
+
+    Returns:
+        True if invoking the plugin does not raise ``ModuleNotFoundError``
+        (or similar import errors), False otherwise.
+    """
+    try:
+        result = subprocess.run(
+            [plugin],
+            input=b"",
+            capture_output=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if result.returncode == 0:
+        return True
+    stderr = result.stderr or b""
+    broken_markers = (
+        b"ModuleNotFoundError",
+        b"ImportError",
+        b"No module named",
+    )
+    return not any(marker in stderr for marker in broken_markers)
 
 
 def find_executable(executable: str) -> Optional[str]:

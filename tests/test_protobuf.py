@@ -12,6 +12,7 @@ from setuptools.errors import ExecError, PlatformError
 
 from setuptools_protobuf import (
     Protobuf,
+    _protoc_plugin_works,
     build_protobuf,
     clean_protobuf,
     find_executable,
@@ -44,9 +45,47 @@ class TestProtobuf(unittest.TestCase):
         """Test explicit mypy flag configuration."""
         pb = Protobuf("foo.proto", mypy=True)
         assert pb.mypy is True
+        assert pb.mypy_auto_detected is False
 
         pb = Protobuf("foo.proto", mypy=False)
         assert pb.mypy is False
+        assert pb.mypy_auto_detected is False
+
+    def test_protobuf_mypy_autodetect_missing(self):
+        """Auto-detection should disable mypy when the plugin is absent."""
+        with patch("setuptools_protobuf.find_executable", return_value=None):
+            pb = Protobuf("foo.proto")
+        assert pb.mypy is False
+        assert pb.mypy_auto_detected is True
+
+    def test_protobuf_mypy_autodetect_broken_plugin(self):
+        """Auto-detection should disable mypy when the plugin cannot import."""
+        import io
+
+        with (
+            patch(
+                "setuptools_protobuf.find_executable", return_value="/x/protoc-gen-mypy"
+            ),
+            patch("setuptools_protobuf._protoc_plugin_works", return_value=False),
+            patch("setuptools_protobuf.sys.stderr", new_callable=io.StringIO) as err,
+        ):
+            pb = Protobuf("foo.proto")
+        assert pb.mypy is False
+        assert pb.mypy_auto_detected is True
+        assert "fails to run" in err.getvalue()
+        assert "/x/protoc-gen-mypy" in err.getvalue()
+
+    def test_protobuf_mypy_autodetect_working_plugin(self):
+        """Auto-detection should enable mypy when the plugin runs."""
+        with (
+            patch(
+                "setuptools_protobuf.find_executable", return_value="/x/protoc-gen-mypy"
+            ),
+            patch("setuptools_protobuf._protoc_plugin_works", return_value=True),
+        ):
+            pb = Protobuf("foo.proto")
+        assert pb.mypy is True
+        assert pb.mypy_auto_detected is True
 
     def test_protobuf_nested_path(self):
         """Test Protobuf with nested directory path."""
@@ -308,6 +347,54 @@ class TestGetProtoc(unittest.TestCase):
 
                 result = get_protoc("3.20.0")
                 assert result == str(protoc_file)
+
+
+class TestProtocPluginWorks(unittest.TestCase):
+    """Tests for the protoc-plugin runnability probe."""
+
+    def test_plugin_runs_cleanly(self):
+        """Plugin exiting 0 is considered working."""
+        with patch("setuptools_protobuf.subprocess.run") as run:
+            run.return_value = MagicMock(returncode=0, stderr=b"")
+            assert _protoc_plugin_works("/x/protoc-gen-mypy") is True
+
+    def test_plugin_module_not_found(self):
+        """Plugin failing with ModuleNotFoundError is considered broken."""
+        with patch("setuptools_protobuf.subprocess.run") as run:
+            run.return_value = MagicMock(
+                returncode=1,
+                stderr=(
+                    b"Traceback (most recent call last):\n"
+                    b'  File "/usr/bin/protoc-gen-mypy", line 5, in <module>\n'
+                    b"    from mypy_protobuf.main import main\n"
+                    b"ModuleNotFoundError: No module named 'mypy_protobuf'\n"
+                ),
+            )
+            assert _protoc_plugin_works("/x/protoc-gen-mypy") is False
+
+    def test_plugin_other_nonzero_exit_is_ok(self):
+        """A non-zero exit without an import error still counts as runnable."""
+        with patch("setuptools_protobuf.subprocess.run") as run:
+            run.return_value = MagicMock(
+                returncode=1,
+                stderr=b"protoc-gen-mypy: expected CodeGeneratorRequest on stdin\n",
+            )
+            assert _protoc_plugin_works("/x/protoc-gen-mypy") is True
+
+    def test_plugin_oserror(self):
+        """OSError while invoking the plugin counts as broken."""
+        with patch("setuptools_protobuf.subprocess.run", side_effect=OSError("boom")):
+            assert _protoc_plugin_works("/x/protoc-gen-mypy") is False
+
+    def test_plugin_timeout(self):
+        """A timeout counts as broken."""
+        with patch(
+            "setuptools_protobuf.subprocess.run",
+            side_effect=__import__("subprocess").TimeoutExpired(
+                cmd="protoc-gen-mypy", timeout=10
+            ),
+        ):
+            assert _protoc_plugin_works("/x/protoc-gen-mypy") is False
 
 
 class TestHasProtobuf(unittest.TestCase):
