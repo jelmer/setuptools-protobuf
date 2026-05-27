@@ -58,6 +58,13 @@ protobufs = ["example/foo.proto"]
 # Require the generation of typing hints:
 mypy = true
 
+# Or disable typing hint generation entirely. When `mypy` is unset,
+# setuptools-protobuf auto-enables stub generation if `protoc-gen-mypy`
+# is on PATH and runnable; set this to `false` to opt out (for example,
+# when a stale `protoc-gen-mypy` is installed but `mypy_protobuf` is not
+# importable in the build environment).
+# mypy = false
+
 # Optionally, set the specific protoc version to use:
 protoc_version = '25.1'
 
