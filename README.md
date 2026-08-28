@@ -55,6 +55,13 @@ requires = ["setuptools", "setuptools-protobuf"]
 [tool.setuptools-protobuf]
 protobufs = ["example/foo.proto"]
 
+# Wildcards are supported (evaluated relative to `proto_path`, or the
+# project root if `proto_path` is unset):
+# protobufs = ["example/*.proto", "protos/**/*.proto"]
+#
+# If `protobufs` is omitted entirely, all `.proto` files under the search
+# root are discovered recursively.
+
 # Require the generation of typing hints:
 mypy = true
 
