@@ -12,6 +12,7 @@ from setuptools.errors import ExecError, PlatformError
 
 from setuptools_protobuf import (
     Protobuf,
+    _expand_protobuf_patterns,
     _protoc_plugin_works,
     build_protobuf,
     clean_protobuf,
@@ -483,6 +484,133 @@ class TestLoadPyprojectConfig(unittest.TestCase):
         load_pyproject_config(dist, cfg)
 
         assert dist.protobufs[0].mypy is False
+
+
+class TestExpandProtobufPatterns(unittest.TestCase):
+    """Test cases for wildcard expansion and auto-discovery."""
+
+    def _make_tree(self, tmpdir: str) -> None:
+        """Populate ``tmpdir`` with a few .proto files and one non-proto."""
+        (Path(tmpdir) / "a.proto").write_text("")
+        (Path(tmpdir) / "b.proto").write_text("")
+        sub = Path(tmpdir) / "sub"
+        sub.mkdir()
+        (sub / "c.proto").write_text("")
+        (Path(tmpdir) / "not_a_proto.txt").write_text("")
+
+    def test_no_wildcards_passes_through(self):
+        """Non-wildcard entries are returned unchanged."""
+        result = _expand_protobuf_patterns(["a.proto", "b.proto"], None)
+        assert result == ["a.proto", "b.proto"]
+
+    def test_glob_expansion(self):
+        """A ``*.proto`` pattern expands to matching files in the root."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._make_tree(tmpdir)
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                result = _expand_protobuf_patterns(["*.proto"], None)
+                assert result == ["a.proto", "b.proto"]
+            finally:
+                os.chdir(orig_cwd)
+
+    def test_recursive_glob(self):
+        """A ``**/*.proto`` pattern descends into subdirectories."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._make_tree(tmpdir)
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                result = _expand_protobuf_patterns(["**/*.proto"], None)
+                assert result == ["a.proto", "b.proto", "sub/c.proto"]
+            finally:
+                os.chdir(orig_cwd)
+
+    def test_autodiscover_when_none(self):
+        """None means: discover every .proto under the search root."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._make_tree(tmpdir)
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                result = _expand_protobuf_patterns(None, None)
+                assert result == ["a.proto", "b.proto", "sub/c.proto"]
+            finally:
+                os.chdir(orig_cwd)
+
+    def test_glob_relative_to_proto_path(self):
+        """Patterns are resolved relative to ``proto_path`` when set."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            protos = Path(tmpdir) / "protos"
+            protos.mkdir()
+            (protos / "x.proto").write_text("")
+            (protos / "y.proto").write_text("")
+            nested = protos / "n"
+            nested.mkdir()
+            (nested / "z.proto").write_text("")
+
+            result = _expand_protobuf_patterns(["**/*.proto"], str(protos))
+            assert result == ["n/z.proto", "x.proto", "y.proto"]
+
+    def test_autodiscover_relative_to_proto_path(self):
+        """Auto-discovery stays inside ``proto_path`` when set."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            protos = Path(tmpdir) / "protos"
+            protos.mkdir()
+            (protos / "x.proto").write_text("")
+            (Path(tmpdir) / "outside.proto").write_text("")
+
+            result = _expand_protobuf_patterns(None, str(protos))
+            assert result == ["x.proto"]
+
+    def test_dedup(self):
+        """A file listed both explicitly and via a glob appears only once."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._make_tree(tmpdir)
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                result = _expand_protobuf_patterns(["a.proto", "*.proto"], None)
+                assert result == ["a.proto", "b.proto"]
+            finally:
+                os.chdir(orig_cwd)
+
+
+class TestLoadPyprojectConfigWildcards(unittest.TestCase):
+    """Test wildcard and auto-discovery support in load_pyproject_config."""
+
+    def test_wildcards_expanded(self):
+        """Wildcards in ``protobufs`` are expanded before Protobuf objects are built."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "one.proto").write_text("")
+            (Path(tmpdir) / "two.proto").write_text("")
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                dist = Distribution()
+                load_pyproject_config(dist, {"protobufs": ["*.proto"]})
+                paths = sorted(pb.path for pb in dist.protobufs)
+                assert paths == ["one.proto", "two.proto"]
+            finally:
+                os.chdir(orig_cwd)
+
+    def test_missing_protobufs_autodiscovers(self):
+        """Omitting ``protobufs`` triggers recursive auto-discovery."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "one.proto").write_text("")
+            sub = Path(tmpdir) / "sub"
+            sub.mkdir()
+            (sub / "two.proto").write_text("")
+            orig_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                dist = Distribution()
+                load_pyproject_config(dist, {"mypy": False})
+                paths = sorted(pb.path for pb in dist.protobufs)
+                assert paths == ["one.proto", "sub/two.proto"]
+            finally:
+                os.chdir(orig_cwd)
 
 
 class TestPyprojecttomlConfig(unittest.TestCase):

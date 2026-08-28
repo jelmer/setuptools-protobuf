@@ -1,5 +1,6 @@
 """Setuptools extension for compiling .proto files."""
 
+import glob
 import os
 import platform
 import subprocess
@@ -144,6 +145,41 @@ class clean_protobuf(Command):  # noqa: N801
         pass
 
 
+def _expand_protobuf_patterns(
+    patterns: Optional[list[str]], proto_path: Optional[str]
+) -> list[str]:
+    """Expand wildcard patterns and auto-discover .proto files.
+
+    Patterns are resolved relative to ``proto_path`` when set, otherwise
+    relative to the current directory. Non-wildcard entries are kept
+    verbatim (relative to ``proto_path``) so that missing files still
+    surface as errors at compile time rather than being silently dropped.
+
+    When ``patterns`` is None, all ``.proto`` files under the search root
+    are discovered recursively.
+    """
+    root = proto_path or "."
+    if patterns is None:
+        patterns = ["**/*.proto"]
+
+    seen: set[str] = set()
+    resolved: list[str] = []
+    for pattern in patterns:
+        if glob.has_magic(pattern):
+            matches = sorted(glob.glob(os.path.join(root, pattern), recursive=True))
+            for match in matches:
+                rel = os.path.relpath(match, root)
+                rel = rel.replace(os.sep, "/")
+                if rel not in seen:
+                    seen.add(rel)
+                    resolved.append(rel)
+        else:
+            if pattern not in seen:
+                seen.add(pattern)
+                resolved.append(pattern)
+    return resolved
+
+
 def load_pyproject_config(dist: Distribution, cfg) -> None:
     """Load setuptools-protobuf configuration from pyproject.toml.
 
@@ -154,8 +190,9 @@ def load_pyproject_config(dist: Distribution, cfg) -> None:
     mypy = cfg.get("mypy")
     proto_path = cfg.get("proto_path")
     dist.protoc_version = cfg.get("protoc_version")  # type: ignore
+    protobufs = _expand_protobuf_patterns(cfg.get("protobufs"), proto_path)
     dist.protobufs = [  # type: ignore
-        Protobuf(pb, mypy=mypy, proto_path=proto_path) for pb in cfg.get("protobufs")
+        Protobuf(pb, mypy=mypy, proto_path=proto_path) for pb in protobufs
     ]
 
 
