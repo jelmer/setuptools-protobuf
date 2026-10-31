@@ -8,7 +8,6 @@ import sys
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 from setuptools import Command
 from setuptools.dist import Distribution
@@ -32,7 +31,7 @@ def has_protobuf(command):
 class build_protobuf(Command):  # noqa: N801
     """Build .proto files."""
 
-    user_options: list[tuple[str, Optional[str], str]] = [  # type: ignore
+    user_options: list[tuple[str, str | None, str]] = [  # type: ignore
         ("protoc", None, "path of compiler protoc")
     ]
     description = "build .proto files"
@@ -146,7 +145,7 @@ class clean_protobuf(Command):  # noqa: N801
 
 
 def _expand_protobuf_patterns(
-    patterns: Optional[list[str]], proto_path: Optional[str]
+    patterns: list[str] | None, proto_path: str | None
 ) -> list[str]:
     """Expand wildcard patterns and auto-discover .proto files.
 
@@ -339,7 +338,7 @@ def _protoc_plugin_works(plugin: str) -> bool:
     return not any(marker in stderr for marker in broken_markers)
 
 
-def find_executable(executable: str) -> Optional[str]:
+def find_executable(executable: str) -> str | None:
     """Find an executable in the PATH.
 
     Args:
@@ -365,7 +364,7 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
-def get_protoc(version) -> Optional[str]:
+def get_protoc(version) -> str | None:
     """Download and return the path to the protoc binary for the given version.
 
     If version is None, the system protoc is returned if available.
